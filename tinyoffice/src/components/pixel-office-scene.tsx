@@ -195,10 +195,10 @@ export function getLoungeMemberSpot(memberIndex: number, memberTotal: number) {
 }
 
 export function getTaskStationRect(index: number, total: number) {
-  const columns = total <= 2 ? total : total <= 4 ? 2 : 3;
+  const columns = total >= 7 ? 4 : total <= 2 ? total : total <= 4 ? 2 : 3;
   const normalizedColumns = Math.max(1, columns);
   const rows = Math.ceil(total / normalizedColumns);
-  const gapX = 20;
+  const gapX = normalizedColumns >= 4 ? 14 : 20;
   const gapY = 18;
   const width =
     normalizedColumns === 1
@@ -229,18 +229,18 @@ export function getTaskStationMemberSpot(
 ) {
   const station = getTaskStationRect(stationIndex, totalStations);
   const baseX = station.x + station.width / 2;
-  const baseY = station.y + Math.min(station.height - 20, 102);
+  const baseY = station.y + Math.min(station.height - 8, 122);
   if (memberTotal <= 1) return { x: baseX, y: baseY };
   if (memberTotal === 2) {
     return {
       x: baseX + (memberIndex === 0 ? -18 : 18),
-      y: baseY + (memberIndex === 0 ? 2 : -2),
+      y: baseY + (memberIndex === 0 ? 4 : 0),
     };
   }
   const offsets = [-26, 0, 26];
   return {
     x: baseX + offsets[Math.min(memberIndex, 2)],
-    y: baseY + (memberIndex === 1 ? -4 : 4),
+    y: baseY + (memberIndex === 1 ? 0 : 6),
   };
 }
 
@@ -370,19 +370,21 @@ function DeskMonitor({
   return <Sprite src={asset.src} x={x} y={y} width={size.width} height={size.height} zIndex={zIndex} />;
 }
 
-function RoomHeader({ x, y, title, accent, width = 154 }: { x: number; y: number; title: string; accent: string; width?: number }) {
+function RoomHeader({ x, y, title, accent }: { x: number; y: number; title: string; accent: string }) {
   return (
     <div
-      className="pointer-events-none absolute rounded-[12px] border px-3 py-2 font-mono"
+      className="pointer-events-none absolute inline-flex rounded-[12px] border px-3 py-2 font-mono"
       style={{
-        ...rectStyle(x, y, width, 30, 40),
+        left: toPercent(x, PIXEL_SCENE_LAYOUT.width),
+        top: toPercent(y, PIXEL_SCENE_LAYOUT.height),
+        zIndex: 40,
         borderColor: accent,
         background: "rgba(245, 238, 229, 0.84)",
         color: "#2d241d",
         boxShadow: panelShadow(accent),
       }}
     >
-      <div className="text-[11px] uppercase tracking-[0.2em]" style={{ color: accent }}>
+      <div className="text-[11px] font-bold uppercase tracking-[0.2em] whitespace-nowrap" style={{ color: accent }}>
         {title}
       </div>
     </div>
@@ -496,8 +498,8 @@ function StaticOfficeFurniture({ bossRoom, archiveRoom }: { bossRoom: SceneBossR
 
   return (
     <>
-      <RoomHeader x={PIXEL_SCENE_LAYOUT.bossRoomX + 10} y={PIXEL_SCENE_LAYOUT.bossRoomY + 8} title={bossRoom.label} accent="#84cc16" width={134} />
-      <RoomHeader x={PIXEL_SCENE_LAYOUT.archiveRoomX + 10} y={PIXEL_SCENE_LAYOUT.archiveRoomY + 8} title={archiveRoom.label} accent="#f59e0b" width={124} />
+      <RoomHeader x={PIXEL_SCENE_LAYOUT.bossRoomX + 10} y={PIXEL_SCENE_LAYOUT.bossRoomY + 8} title={bossRoom.label} accent="#84cc16" />
+      <RoomHeader x={PIXEL_SCENE_LAYOUT.archiveRoomX + 10} y={PIXEL_SCENE_LAYOUT.archiveRoomY + 8} title={archiveRoom.label} accent="#f59e0b" />
 
       <Sprite src={FURNITURE.whiteboard.src} x={PIXEL_SCENE_LAYOUT.bossRoomX + 18} y={PIXEL_SCENE_LAYOUT.bossRoomY + 40} width={board.width} height={board.height} zIndex={34} />
       <Sprite src={FURNITURE.paintingLarge.src} x={PIXEL_SCENE_LAYOUT.bossRoomX + 108} y={PIXEL_SCENE_LAYOUT.bossRoomY + 38} width={paintingLarge.width} height={paintingLarge.height} zIndex={34} />
@@ -507,6 +509,8 @@ function StaticOfficeFurniture({ bossRoom, archiveRoom }: { bossRoom: SceneBossR
 
       <Sprite src={FURNITURE.bookshelf.src} x={PIXEL_SCENE_LAYOUT.archiveRoomX + 18} y={PIXEL_SCENE_LAYOUT.archiveRoomY + 52} width={book.width} height={book.height} zIndex={34} />
       <Sprite src={FURNITURE.bookshelf.src} x={PIXEL_SCENE_LAYOUT.archiveRoomX + 94} y={PIXEL_SCENE_LAYOUT.archiveRoomY + 52} width={book.width} height={book.height} zIndex={34} />
+      <Sprite src={FURNITURE.bookshelf.src} x={PIXEL_SCENE_LAYOUT.archiveRoomX + 18} y={PIXEL_SCENE_LAYOUT.archiveRoomY + 94} width={book.width} height={book.height} zIndex={34} />
+      <Sprite src={FURNITURE.bookshelf.src} x={PIXEL_SCENE_LAYOUT.archiveRoomX + 94} y={PIXEL_SCENE_LAYOUT.archiveRoomY + 94} width={book.width} height={book.height} zIndex={34} />
       <Sprite src={FURNITURE.paintingSmall.src} x={PIXEL_SCENE_LAYOUT.archiveRoomX + 180} y={PIXEL_SCENE_LAYOUT.archiveRoomY + 52} width={smallPainting.width} height={smallPainting.height} zIndex={36} />
       <Sprite src={FURNITURE.clock.src} x={PIXEL_SCENE_LAYOUT.archiveRoomX + 20} y={PIXEL_SCENE_LAYOUT.archiveRoomY + 24} width={clock.width} height={clock.height} zIndex={36} />
       <Sprite src={FURNITURE.coffee.src} x={PIXEL_SCENE_LAYOUT.archiveRoomX + 176} y={PIXEL_SCENE_LAYOUT.archiveRoomY + 108} width={36} height={36} zIndex={39} />
@@ -524,35 +528,18 @@ function StaticOfficeFurniture({ bossRoom, archiveRoom }: { bossRoom: SceneBossR
 
 function LoungeScene({ lounge }: { lounge: SceneLounge }) {
   const sofaFront = scaledAsset(FURNITURE.sofaFront, 2.15);
-  const sofaBack = scaledAsset(FURNITURE.sofaBack, 2.15);
   const sofaSide = scaledAsset(FURNITURE.sofaSide, 2.15);
-  const coffeeTable = scaledAsset(FURNITURE.coffeeTable, 2.2);
-  const coffee = scaledAsset(FURNITURE.coffee, 2.1);
   const plant = scaledAsset(FURNITURE.plant2, 2.2);
-  const sideTable = scaledAsset(FURNITURE.smallTableSide, 1.9);
 
   return (
     <>
-      <RoomHeader x={PIXEL_SCENE_LAYOUT.loungeX + 12} y={PIXEL_SCENE_LAYOUT.loungeY - 26} title={lounge.label} accent="#14b8a6" width={148} />
-      <FloorArea
-        x={PIXEL_SCENE_LAYOUT.loungeX + 112}
-        y={PIXEL_SCENE_LAYOUT.loungeY + 8}
-        width={192}
-        height={72}
-        texture={FLOOR_ASSETS.rug}
-        zIndex={3}
-        insetBorder
-      />
+      <RoomHeader x={PIXEL_SCENE_LAYOUT.loungeX + 12} y={PIXEL_SCENE_LAYOUT.loungeY - 26} title={lounge.label} accent="#14b8a6" />
       <Sprite src={FURNITURE.sofaFront.src} x={PIXEL_SCENE_LAYOUT.loungeX + 176} y={PIXEL_SCENE_LAYOUT.loungeY + 8} width={sofaFront.width} height={sofaFront.height} zIndex={30} />
-      <Sprite src={FURNITURE.sofaBack.src} x={PIXEL_SCENE_LAYOUT.loungeX + 176} y={PIXEL_SCENE_LAYOUT.loungeY + 92} width={sofaBack.width} height={sofaBack.height} zIndex={34} />
-      <Sprite src={FURNITURE.sofaSide.src} x={PIXEL_SCENE_LAYOUT.loungeX + 132} y={PIXEL_SCENE_LAYOUT.loungeY + 36} width={sofaSide.width} height={sofaSide.height} zIndex={33} />
-      <Sprite src={FURNITURE.sofaSide.src} x={PIXEL_SCENE_LAYOUT.loungeX + 304} y={PIXEL_SCENE_LAYOUT.loungeY + 36} width={sofaSide.width} height={sofaSide.height} zIndex={33} mirror />
-      <Sprite src={FURNITURE.coffeeTable.src} x={PIXEL_SCENE_LAYOUT.loungeX + 214} y={PIXEL_SCENE_LAYOUT.loungeY + 34} width={coffeeTable.width} height={coffeeTable.height} zIndex={32} />
-      <Sprite src={FURNITURE.coffee.src} x={PIXEL_SCENE_LAYOUT.loungeX + 248} y={PIXEL_SCENE_LAYOUT.loungeY + 48} width={coffee.width} height={coffee.height} zIndex={33} />
+      <Sprite src={FURNITURE.sofaFront.src} x={PIXEL_SCENE_LAYOUT.loungeX + 324} y={PIXEL_SCENE_LAYOUT.loungeY + 8} width={sofaFront.width} height={sofaFront.height} zIndex={30} />
+      <Sprite src={FURNITURE.sofaSide.src} x={PIXEL_SCENE_LAYOUT.loungeX + 22} y={PIXEL_SCENE_LAYOUT.loungeY + 36} width={sofaSide.width} height={sofaSide.height} zIndex={33} />
+      <Sprite src={FURNITURE.sofaSide.src} x={PIXEL_SCENE_LAYOUT.loungeX + PIXEL_SCENE_LAYOUT.loungeWidth - 22 - sofaSide.width} y={PIXEL_SCENE_LAYOUT.loungeY + 36} width={sofaSide.width} height={sofaSide.height} zIndex={33} mirror />
       <Sprite src={FURNITURE.plant2.src} x={PIXEL_SCENE_LAYOUT.loungeX + 126} y={PIXEL_SCENE_LAYOUT.loungeY + 14} width={plant.width} height={plant.height} zIndex={34} />
       <Sprite src={FURNITURE.plant2.src} x={PIXEL_SCENE_LAYOUT.loungeX + 332} y={PIXEL_SCENE_LAYOUT.loungeY + 18} width={plant.width} height={plant.height} zIndex={34} />
-      <Sprite src={FURNITURE.smallTableSide.src} x={PIXEL_SCENE_LAYOUT.loungeX + 52} y={PIXEL_SCENE_LAYOUT.loungeY + 32} width={sideTable.width} height={sideTable.height} zIndex={28} />
-      <Sprite src={FURNITURE.smallTableSide.src} x={PIXEL_SCENE_LAYOUT.loungeX + 516} y={PIXEL_SCENE_LAYOUT.loungeY + 30} width={sideTable.width} height={sideTable.height} zIndex={28} mirror />
     </>
   );
 }

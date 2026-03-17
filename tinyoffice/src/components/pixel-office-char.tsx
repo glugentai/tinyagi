@@ -42,12 +42,12 @@ function spriteFrame(anim: PixelCharAnim, frame: number) {
     return 3 + (Math.abs(frame) % 2);
   }
   if (anim === "sleep") {
-    return 6;
+    return 3;
   }
   if (anim === "error") {
     return 4 + (Math.abs(frame) % 2);
   }
-  return 1;
+  return 3;
 }
 
 function spriteRow(facing: PixelCharFacing) {

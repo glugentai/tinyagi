@@ -95,6 +95,7 @@ type AgentWorkSession = {
 
 const AGENT_COLORS = ["#a3e635", "#84cc16", "#f59e0b", "#14b8a6", "#eab308", "#22c55e"];
 const AGENT_SESSION_RELEASE_MS = 6200;
+const OFFICE_STATION_COUNT = 8;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -484,7 +485,7 @@ export default function OfficePage() {
   }, [tasks]);
 
   const taskStations = useMemo<SceneTaskStation[]>(() => {
-    return agentEntries.map(([agentId, agent]) => {
+    const stations = agentEntries.map(([agentId, agent]) => {
       const directTask = activeTasks.find(
         (task) => task.assigneeType === "agent" && task.assignee === agentId,
       );
@@ -530,6 +531,17 @@ export default function OfficePage() {
         kind: "task" as const,
       };
     });
+    const renderedStationCount = Math.max(OFFICE_STATION_COUNT, stations.length);
+    for (let index = stations.length; index < renderedStationCount; index += 1) {
+      stations.push({
+        id: `desk-empty-${index}`,
+        label: `Open Desk ${index + 1}`,
+        subtitle: "vacant workstation",
+        status: "empty",
+        kind: "task",
+      });
+    }
+    return stations;
   }, [activeTasks, agentEntries, bubbles, clock.now, teams]);
 
   const stationAssignments = useMemo(() => {
@@ -1079,7 +1091,7 @@ export default function OfficePage() {
             return (
               <div
                 key={bubble.id}
-                className={`absolute z-20 h-[76px] w-[192px] -translate-x-1/2 animate-slide-up ${
+                className={`absolute z-50 h-[76px] w-[192px] -translate-x-1/2 animate-slide-up ${
                   bubble.heading === "boss command" ? "" : "-translate-y-full"
                 }`}
                 style={{ left: position.left, top: position.top }}
