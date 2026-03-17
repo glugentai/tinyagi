@@ -1,6 +1,7 @@
-import type { ReactNode } from "react";
+import type { CSSProperties } from "react";
 
 export type PixelCharAnim = "idle" | "walk" | "type" | "celebrate" | "error" | "sleep";
+export type PixelCharFacing = "down" | "up" | "right" | "left";
 
 type PixelOfficeCharProps = {
   x: number;
@@ -9,147 +10,68 @@ type PixelOfficeCharProps = {
   anim: PixelCharAnim;
   frame: number;
   flip?: boolean;
-  hat?: boolean;
   size?: number;
+  variantKey?: string;
+  facing?: PixelCharFacing;
+  worldWidth?: number;
+  worldHeight?: number;
 };
 
-const PX = 3;
+const SPRITE_WIDTH = 16;
+const SPRITE_HEIGHT = 32;
+const SHEET_COLUMNS = 7;
+const SHEET_ROWS = 3;
+const CHARACTER_VARIANTS = 6;
+const DEFAULT_WORLD_WIDTH = 1280;
+const DEFAULT_WORLD_HEIGHT = 720;
 
-const PALETTE: Record<string, string> = {
-  O: "#2a1518",
-  H: "#8f6439",
-  L: "#b18649",
-  S: "#e9a384",
-  s: "#fbbf97",
-  F: "#c5896e",
-  E: "#000000",
-  W: "#ffffff",
-  g: "#4f4f4f",
-  P: "#0f3052",
-  p: "#1a4a7a",
-  K: "#040605",
-  N: "#493e38",
-};
-
-const HEAD_ROWS = [
-  "________________",
-  "________________",
-  "____OOOOOOO_____",
-  "___OHHHLOHHO____",
-  "__OHHHHLHHHHHHO_",
-  "_OLHHHHHOHHHHO__",
-  "_OLHHHHHHHHHO___",
-  "_OLHHHHHHHHHO___",
-  "_OLHHHHHHHHHO___",
-  "_OLHHHHHHHHHO___",
-  "_OHHHLLLOHLHO___",
-  "_OHHHHOOHOHHHO__",
-  "_OHHOOSSPSSOO___",
-  "__OOSSESSESOo___",
-  "___NsWESSEWsN___",
-  "___NsWgSSgWsN___",
-  "____NFsSSsFN____",
-];
-
-const ARMS_IDLE = [
-  "___NCNNSSNNDN___",
-  "__NCDDDWKKWDDN__",
-  "__NDDDWKKWDDCN__",
-  "__sWDDWKKWNSSN__",
-  "__NSNDDWKKWSFN__",
-];
-
-const ARMS_TYPE = [
-  "___NCNNSSNNDN___",
-  "__NCDDDWKKWDDN__",
-  "_NDDDWKKKKWDDNs_",
-  "_NSSsDDWKKWNSsN_",
-  "_NsSSNDKKKKNSSN_",
-];
-
-const ARMS_CELEBRATE = [
-  "sNNNCNNSSNNCNNs_",
-  "NsNCDDDWKKWDDsN_",
-  "___NDDDWKKWDDD__",
-  "__ssDDDWKKWNss__",
-  "___NSNKKKKKNSN__",
-];
-
-const ARMS_SLEEP = [
-  "___NCNNSSNNDN___",
-  "__NCDDDWKKWDDN__",
-  "__NDDDKKKKKDDNs_",
-  "__NSDDKKKKKNSp__",
-  "___SpNpppppNS___",
-];
-
-const LEGS_IDLE = [
-  "__NFNpWKKWDNN___",
-  "___NNpWWWWpN____",
-];
-
-const LEGS_WALK_A = [
-  "__NFNpKppKDNN___",
-  "___KppK___pKN___",
-];
-
-const LEGS_WALK_B = [
-  "__NFNpKppKDNN___",
-  "___NppK___KpK___",
-];
-
-const LEGS_TYPE = [
-  "__NFNpWKKWDNN___",
-  "___NpKK___KpN___",
-];
-
-const LEGS_CELEBRATE = [
-  "__NpNpKKKKKpNN__",
-  "_NKppK_____KppKN",
-];
-
-function colorFor(token: string, shirt: string) {
-  if (token === "_") return "transparent";
-  if (token === "C") return shirt;
-  if (token === "D") {
-    const r = parseInt(shirt.slice(1, 3), 16);
-    const g = parseInt(shirt.slice(3, 5), 16);
-    const b = parseInt(shirt.slice(5, 7), 16);
-    return `#${Math.round(r * 0.7).toString(16).padStart(2, "0")}${Math.round(g * 0.7)
-      .toString(16)
-      .padStart(2, "0")}${Math.round(b * 0.7)
-      .toString(16)
-      .padStart(2, "0")}`;
+function hashKey(value: string) {
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
   }
-  return PALETTE[token] ?? "#ff00ff";
+  return hash;
 }
 
-function pixelRow(
-  row: string,
-  rowIndex: number,
-  baseX: number,
-  baseY: number,
-  px: number,
-  shirt: string,
-  keyPrefix: string,
-) {
-  const rects: ReactNode[] = [];
-  for (let column = 0; column < row.length; column += 1) {
-    const token = row[column];
-    if (token === "_" || token === " ") continue;
-    const normalized = token === "o" ? "O" : token === "G" ? "g" : token;
-    rects.push(
-      <rect
-        key={`${keyPrefix}${rowIndex}_${column}`}
-        x={baseX + column * px}
-        y={baseY + rowIndex * px}
-        width={px}
-        height={px}
-        fill={colorFor(normalized, shirt)}
-      />,
-    );
+function spriteFrame(anim: PixelCharAnim, frame: number) {
+  if (anim === "walk") {
+    const frames = [0, 1, 2, 1];
+    return frames[Math.abs(frame) % frames.length];
   }
-  return rects;
+  if (anim === "type" || anim === "celebrate") {
+    return 3 + (Math.abs(frame) % 2);
+  }
+  if (anim === "sleep") {
+    return 6;
+  }
+  if (anim === "error") {
+    return 4 + (Math.abs(frame) % 2);
+  }
+  return 1;
+}
+
+function spriteRow(facing: PixelCharFacing) {
+  if (facing === "up") return 1;
+  if (facing === "left" || facing === "right") return 2;
+  return 0;
+}
+
+function bobOffset(anim: PixelCharAnim, frame: number, scale: number) {
+  const unit = Math.max(1, scale * 1.35);
+  if (anim === "walk") return (frame % 2 === 0 ? 0 : -unit) - unit * 0.25;
+  if (anim === "type") return frame % 2 === 0 ? 0 : -unit * 0.75;
+  if (anim === "celebrate") return -unit * (1.2 + Math.abs(Math.sin(frame / 3)) * 1.8);
+  return 0;
+}
+
+function shakeOffset(anim: PixelCharAnim, frame: number, scale: number) {
+  if (anim !== "error") return 0;
+  const unit = Math.max(1, scale);
+  return frame % 2 === 0 ? -unit : unit;
+}
+
+function toPercent(value: number, total: number) {
+  return `${(value / total) * 100}%`;
 }
 
 export function PixelOfficeChar({
@@ -159,67 +81,67 @@ export function PixelOfficeChar({
   anim,
   frame,
   flip = false,
-  hat = false,
   size = 1,
+  variantKey,
+  facing = "down",
+  worldWidth = DEFAULT_WORLD_WIDTH,
+  worldHeight = DEFAULT_WORLD_HEIGHT,
 }: PixelOfficeCharProps) {
-  const px = Math.round(PX * size);
-  const charWidth = 16 * px;
-  const charHeight = 24 * px;
-  const walkPhase = Math.floor(frame / 4) % 2 === 0;
-  const typeBounce = anim === "type" ? (Math.floor(frame / 3) % 2 === 0 ? -px : 0) : 0;
-  const celebrateJump =
-    anim === "celebrate" ? Math.round(Math.abs(Math.sin((frame / 10) * Math.PI)) * px * 4) : 0;
-  const errorShake = anim === "error" ? (Math.floor(frame / 2) % 2 === 0 ? -px : px) : 0;
+  const scale = 2.2 * size;
+  const width = SPRITE_WIDTH * scale;
+  const height = SPRITE_HEIGHT * scale;
+  const variant = hashKey(variantKey ?? color) % CHARACTER_VARIANTS;
+  const frameIndex = spriteFrame(anim, frame);
+  const rowIndex = spriteRow(facing);
+  const mirror = flip || facing === "left";
+  const bob = bobOffset(anim, frame, scale);
+  const shake = shakeOffset(anim, frame, scale);
+  const left = x - width / 2 + shake;
+  const top = y - height + bob;
+  const shadowTop = y - scale * 2;
+  const shadowWidth = width * 0.62;
+  const shadowHeight = Math.max(6, scale * 4.8);
 
-  const baseX = x - charWidth / 2 + errorShake;
-  const baseY = y - charHeight + typeBounce - celebrateJump;
-
-  const armRows =
-    anim === "type"
-      ? ARMS_TYPE
-      : anim === "celebrate"
-        ? ARMS_CELEBRATE
-        : anim === "sleep"
-          ? ARMS_SLEEP
-          : ARMS_IDLE;
-
-  const legRows =
-    anim === "walk"
-      ? walkPhase
-        ? LEGS_WALK_A
-        : LEGS_WALK_B
-      : anim === "celebrate"
-        ? LEGS_CELEBRATE
-        : anim === "type"
-          ? LEGS_TYPE
-          : LEGS_IDLE;
-
-  const pixels: ReactNode[] = [];
-
-  if (hat) {
-    pixels.push(
-      <rect key="hat-brim" x={baseX + px} y={baseY + px * 2} width={14 * px} height={px * 2} fill={color} />,
-      <rect key="hat-body" x={baseX + 3 * px} y={baseY - px * 3} width={10 * px} height={px * 4} fill={color} />,
-      <rect key="hat-star" x={baseX + 7 * px} y={baseY - px * 2} width={2 * px} height={2 * px} fill="#f59e0b" />,
-    );
-  }
-
-  HEAD_ROWS.forEach((row, index) => {
-    pixels.push(...pixelRow(row, index, baseX, baseY, px, color, "h"));
-  });
-
-  armRows.forEach((row, index) => {
-    pixels.push(...pixelRow(row, 17 + index, baseX, baseY, px, color, "a"));
-  });
-
-  legRows.forEach((row, index) => {
-    pixels.push(...pixelRow(row, 22 + index, baseX, baseY, px, color, "l"));
-  });
+  const spriteStyle: CSSProperties = {
+    width: "100%",
+    height: "100%",
+    backgroundImage: `url(/assets/pixel-agents/characters/char_${variant}.png)`,
+    backgroundRepeat: "no-repeat",
+    backgroundSize: `${SHEET_COLUMNS * 100}% ${SHEET_ROWS * 100}%`,
+    backgroundPosition: `${(frameIndex / (SHEET_COLUMNS - 1)) * 100}% ${(rowIndex / (SHEET_ROWS - 1)) * 100}%`,
+    imageRendering: "pixelated",
+    transform: mirror ? "scaleX(-1)" : undefined,
+    transformOrigin: "center",
+    filter:
+      anim === "error"
+        ? "drop-shadow(0 0 10px rgba(239,68,68,0.45))"
+        : `drop-shadow(0 0 10px color-mix(in srgb, ${color} 38%, transparent))`,
+  };
 
   return (
-    <g transform={flip ? `translate(${x * 2}, 0) scale(-1, 1)` : undefined}>
-      <ellipse cx={x} cy={y + px} rx={charWidth * 0.32} ry={px * 1.4} fill="#0b1020" opacity={0.35} />
-      {pixels}
-    </g>
+    <>
+      <div
+        className="pointer-events-none absolute rounded-full bg-[#120d09]/35 blur-[1px]"
+        style={{
+          left: toPercent(x - shadowWidth / 2, worldWidth),
+          top: toPercent(shadowTop, worldHeight),
+          width: toPercent(shadowWidth, worldWidth),
+          height: toPercent(shadowHeight, worldHeight),
+          zIndex: Math.max(1, Math.round(y * 8)),
+        }}
+      />
+      <div
+        className="pointer-events-none absolute"
+        style={{
+          left: toPercent(left, worldWidth),
+          top: toPercent(top, worldHeight),
+          width: toPercent(width, worldWidth),
+          height: toPercent(height, worldHeight),
+          zIndex: Math.max(2, Math.round(y * 10)),
+        }}
+      >
+        <div style={spriteStyle} />
+      </div>
+    </>
   );
 }

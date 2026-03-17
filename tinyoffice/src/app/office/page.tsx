@@ -753,8 +753,8 @@ export default function OfficePage() {
     if (latestUserBubble && clock.now - latestUserBubble.timestamp < 10000) {
       items.push({
         id: latestUserBubble.id,
-        x: PIXEL_SCENE_LAYOUT.bossRoomX + 108,
-        y: PIXEL_SCENE_LAYOUT.bossRoomY + 140,
+        x: PIXEL_SCENE_LAYOUT.bossRoomX + PIXEL_SCENE_LAYOUT.bossRoomWidth / 2,
+        y: PIXEL_SCENE_LAYOUT.bossRoomY + PIXEL_SCENE_LAYOUT.bossRoomHeight - 6,
         color: "#84cc16",
         heading: "boss command",
         message: trimText(latestUserBubble.message, 220),
@@ -867,51 +867,16 @@ export default function OfficePage() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex-1 overflow-hidden border-b border-border bg-[radial-gradient(circle_at_top,#1b2440,#0c0a09_58%)] p-3">
+      <div className="flex-1 overflow-hidden border-b border-border bg-[radial-gradient(circle_at_top,#f7ecdd,#b79372_42%,#4b3728_100%)] p-3">
         <div className="relative size-full">
           <PixelOfficeScene
             frame={clock.frame}
-            connected={connected}
-            statusLabel={statusLabel}
-            queue={queueSnapshot}
             bossRoom={bossRoomModel}
             archiveRoom={archiveRoomModel}
-            routeRoot={routeRoot}
-            routeTargets={routeTargets}
             lounge={loungeModel}
             taskStations={taskStations}
-            taskSummaries={taskSummaries}
-            responses={responseItems}
             agents={sceneAgents}
           />
-
-          <div
-            className="absolute grid grid-cols-2 gap-[0.45vw] min-[1280px]:gap-2.5"
-            style={{
-              left: `${((PIXEL_SCENE_LAYOUT.archiveRoomX + 41) / PIXEL_SCENE_LAYOUT.width) * 100}%`,
-              top: `${((PIXEL_SCENE_LAYOUT.archiveRoomY + 166) / PIXEL_SCENE_LAYOUT.height) * 100}%`,
-              width: `${(148 / PIXEL_SCENE_LAYOUT.width) * 100}%`,
-            }}
-          >
-            {[
-              { id: "logs", label: "Logs" },
-              { id: "workspace", label: "Workspace" },
-              { id: "tasks", label: "Task Board" },
-              { id: "outgoing", label: "Outgoing Dock" },
-              { id: "routing", label: "Live Routing" },
-            ].map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setArchivePanel((current) => (current === item.id ? null : (item.id as typeof archivePanel)))}
-                className={`min-w-0 justify-self-stretch rounded-[10px] border border-stone-700 bg-[rgba(37,28,24,0.88)] px-[0.45vw] py-[0.3vw] text-[clamp(7px,0.6vw,10px)] leading-none font-mono text-stone-100 transition hover:border-lime-500 hover:text-lime-300 min-[1280px]:px-2.5 min-[1280px]:py-[4px] ${
-                  item.id === "routing" ? "col-span-2" : ""
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
 
           {archivePanel && (
             <div className="absolute inset-y-6 right-4 z-30 w-[380px] rounded-md border border-stone-700 bg-stone-950/95 shadow-2xl">
@@ -1009,7 +974,7 @@ export default function OfficePage() {
           )}
 
           <div
-            className="absolute z-10 flex flex-col overflow-hidden rounded-[18px] border border-[#7b6555] bg-[rgba(182,151,122,0.92)] shadow-2xl"
+            className="absolute z-40 flex flex-col overflow-hidden rounded-[18px] border border-[#7b6555] bg-[rgba(182,151,122,0.92)] shadow-2xl"
             style={{
               left: `${(680 / PIXEL_SCENE_LAYOUT.width) * 100}%`,
               top: `${(26 / PIXEL_SCENE_LAYOUT.height) * 100}%`,
